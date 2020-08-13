@@ -1,6 +1,7 @@
 import tkinter
 import LEDMatrix
 import random
+import time
 
 class LedMatrixSim(LEDMatrix.Matrix):
     def __init__(self, window, width, height):
@@ -18,9 +19,9 @@ class LedMatrixSim(LEDMatrix.Matrix):
         return matrix
 
 class LedSim(LEDMatrix.LED):
-    def __init__(self, window, x, y, width = 5, height = 2, r = 0, g = 0, b = 0, a = 255):
+    def __init__(self, window, x, y, width = 40, height = 40, r = 0, g = 0, b = 0, a = 255):
         LEDMatrix.LED.__init__(self, x, y, r, g, b, a)
-        self.Model = tkinter.Label(window, width=width, height=height)
+        self.Model = tkinter.Canvas(window, width=width, height=height)
     def change_color(self, r, g, b):
         self.R = r
         self.G = g
@@ -35,25 +36,39 @@ class Simulation():
         self.Rows = height
         self.Columns = width
         self.Window = tkinter.Tk()
-        self.Window.title = title
-        self.Matrix = LedMatrixSim(self.Window, width, height).Matrix
+        self.Window.title(title)
+        self.Matrix = LedMatrixSim(self.Window, self.Columns, self.Rows).Matrix
         self.Controls = self.generate_controls(self.Window, self.Rows)
+        self.ChangeRandomly = False
+        self.reset()
     
+    def start(self):
+        self.Window.mainloop()
+
+    def reset(self):
+        for row in self.Matrix:
+            for led in row:
+                led.change_color(255,255,255)
+
     def generate_controls(self, window, rows):
         entries = ["X","Y","R","G","B"]
         controls = {}
         for e in range(len(entries)):
             controls[entries[e]] = self.create_entry(window, e, rows, entries[e])
-        controls["BTN"] = tkinter.Button(window, text="Set", width=4, command=self.change_click)
-        controls["BTN"].grid(column=len(entries),row=rows)
+        controls["b_set"] = tkinter.Button(window, text="Set", width=4, command=self.change_click)
+        controls["b_set"].grid(column=len(entries),row=rows)
+        controls["b_rnd"] = tkinter.Button(window, text="Rnd", width=4, command=self.toggle_random)
+        controls["b_rnd"].grid(column=len(entries)+1,row=rows)
+        controls["b_clear"] = tkinter.Button(window, text="Clear", width=4, command=self.reset)
+        controls["b_clear"].grid(column=len(entries)+2,row=rows)
         return controls
 
     def create_entry(self, window,x,y,placeholder):
         e = tkinter.Entry(window, width=5)
         e.insert(0, placeholder)
         e.grid(column=x,row=y)
-        e.bind("<FocusIn>",lambda args: e.delete(0,'end'))
-        e.bind("<FocusOut>",lambda args: e.insert(0,placeholder) if len(e.get()<1) else True)
+        e.bind("<FocusIn>",lambda args: e.delete(0,'end') if e.get() == placeholder else True)
+        e.bind("<FocusOut>",lambda args: e.insert(0,placeholder) if e.get() == "" else True)
         return e
 
     def change_click(self):
@@ -72,3 +87,10 @@ class Simulation():
         g = random.randint(0,255)
         b = random.randint(0,255)
         self.Matrix[x][y].change_color(r,g,b)
+
+    def toggle_random(self):
+        self.ChangeRandomly = False if self.ChangeRandomly else True
+        while self.ChangeRandomly:
+            self.change_random()
+            self.Window.update()
+            time.sleep(0.1)
